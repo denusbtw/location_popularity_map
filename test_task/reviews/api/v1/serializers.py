@@ -6,19 +6,39 @@ from test_task.users.api.v1.serializers import UserNestedSerializer
 
 class ReviewListSerializer(serializers.ModelSerializer):
     user = UserNestedSerializer()
+    upvote_count = serializers.IntegerField(default=0)
+    downvote_count = serializers.IntegerField(default=0)
 
     class Meta:
         model = Review
-        fields = ("id", "user", "title", "body", "rating")
+        fields = (
+            "id",
+            "user",
+            "title",
+            "body",
+            "rating",
+            "upvote_count",
+            "downvote_count",
+        )
         read_only_fields = fields
 
 
 class ReviewRetrieveSerializer(serializers.ModelSerializer):
     user = UserNestedSerializer()
+    upvote_count = serializers.IntegerField(default=0)
+    downvote_count = serializers.IntegerField(default=0)
 
     class Meta:
         model = Review
-        fields = ("id", "user", "title", "body", "rating")
+        fields = (
+            "id",
+            "user",
+            "title",
+            "body",
+            "rating",
+            "upvote_count",
+            "downvote_count",
+        )
         read_only_fields = fields
 
 
