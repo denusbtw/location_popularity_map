@@ -1,3 +1,8 @@
 from django.contrib import admin
 
-# Register your models here.
+from test_task.reviews.models import Review
+
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    pass
