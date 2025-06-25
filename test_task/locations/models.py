@@ -43,6 +43,7 @@ class Location(UUIDModel, TimestampedModel):
     view_count = models.PositiveBigIntegerField(default=0)
 
     class Meta:
+        unique_together = ("latitude", "longitude")
         ordering = ["-created_at"]
 
     def __str__(self):
