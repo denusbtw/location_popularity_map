@@ -39,7 +39,7 @@ urlpatterns = [
         name="review_vote_create",
     ),
     path(
-        "reviews/<uuid:review_id>/votes/<int:pk>/",
+        "reviews/<uuid:review_id>/votes/<uuid:pk>/",
         ReviewVoteDetailAPIView.as_view(),
         name="review_vote_detail",
     ),

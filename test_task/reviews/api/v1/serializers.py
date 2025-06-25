@@ -46,7 +46,7 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ("title", "body", "rating")
+        fields = ("id", "title", "body", "rating")
 
 
 class ReviewUpdateSerializer(serializers.ModelSerializer):
@@ -64,7 +64,10 @@ class ReviewUpdateSerializer(serializers.ModelSerializer):
 class ReviewVoteCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReviewVote
-        fields = ("vote",)
+        fields = (
+            "id",
+            "vote",
+        )
 
 
 class ReviewVoteUpdateSerializer(serializers.ModelSerializer):

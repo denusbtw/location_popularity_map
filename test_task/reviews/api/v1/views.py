@@ -61,11 +61,12 @@ class ReviewDetailAPIView(ReviewQuerySetMixin, generics.RetrieveUpdateDestroyAPI
 
     def get_permissions(self):
         if self.request.method in permissions.SAFE_METHODS:
-            return [permissions.AllowAny()]
+            self.permission_classes = [permissions.AllowAny]
         elif self.request.method in {"PUT", "PATCH"}:
-            return [IsUser()]
+            self.permission_classes = [IsUser]
         else:
-            return [permissions.IsAdminUser()]
+            self.permission_classes = [permissions.IsAdminUser | IsUser]
+        return super().get_permissions()
 
     def perform_update(self, serializer):
         super().perform_update(serializer)
@@ -102,7 +103,7 @@ class ReviewVoteCreateAPIView(generics.CreateAPIView):
 
 class ReviewVoteDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ReviewVoteUpdateSerializer
-    permission_classes = [IsUser]
+    permission_classes = [permissions.IsAuthenticated, IsUser]
 
     def get_queryset(self):
         return ReviewVote.objects.filter(
