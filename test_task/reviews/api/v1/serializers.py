@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from test_task.reviews.models import Review
+from test_task.reviews.models import Review, ReviewVote
 from test_task.users.api.v1.serializers import UserNestedSerializer
 
 
@@ -39,3 +39,15 @@ class ReviewUpdateSerializer(serializers.ModelSerializer):
             "body": {"required": False},
             "rating": {"required": False},
         }
+
+
+class ReviewVoteCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReviewVote
+        fields = ("vote",)
+
+
+class ReviewVoteUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReviewVote
+        fields = ("vote",)

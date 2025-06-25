@@ -1,4 +1,4 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, views
 
 from .permissions import IsUser
 from .serializers import (
@@ -6,8 +6,10 @@ from .serializers import (
     ReviewCreateSerializer,
     ReviewRetrieveSerializer,
     ReviewUpdateSerializer,
+    ReviewVoteCreateSerializer,
+    ReviewVoteUpdateSerializer,
 )
-from test_task.reviews.models import Review
+from test_task.reviews.models import Review, ReviewVote
 
 
 class ReviewQuerySetMixin:
@@ -45,3 +47,25 @@ class ReviewDetailAPIView(ReviewQuerySetMixin, generics.RetrieveUpdateDestroyAPI
             return [IsUser()]
         else:
             return [permissions.IsAdminUser()]
+
+
+class ReviewVoteCreateAPIView(generics.CreateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ReviewVoteCreateSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(
+            user=self.request.user,
+            review_id=self.kwargs["review_id"],
+        )
+
+
+class ReviewVoteDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ReviewVoteUpdateSerializer
+    permission_classes = [IsUser]
+
+    def get_queryset(self):
+        return ReviewVote.objects.filter(
+            user=self.request.user,
+            review_id=self.kwargs["review_id"],
+        )
