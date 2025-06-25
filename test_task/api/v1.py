@@ -1,8 +1,9 @@
-from django.urls import path, include
+from django.urls import path
 
 from test_task.locations.api.v1.views import (
     LocationListCreateAPIView,
     LocationDetailAPIView,
+    LocationExportCSVAPIView,
 )
 from test_task.reviews.api.v1.views import (
     ReviewListCreateAPIView,
@@ -14,7 +15,14 @@ from test_task.reviews.api.v1.views import (
 app_name = "v1"
 urlpatterns = [
     path("locations/", LocationListCreateAPIView.as_view(), name="location_list"),
-    path("locations/", LocationDetailAPIView.as_view(), name="location_detail"),
+    path(
+        "locations/<uuid:pk>/", LocationDetailAPIView.as_view(), name="location_detail"
+    ),
+    path(
+        "locations/export/csv/",
+        LocationExportCSVAPIView.as_view(),
+        name="location_export_csv",
+    ),
     path(
         "locations/<uuid:location_id>/reviews/",
         ReviewListCreateAPIView.as_view(),

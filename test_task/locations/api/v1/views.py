@@ -1,6 +1,9 @@
+import pandas as pd
+
 from django.db.models import Avg, Count, F
+from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, filters
+from rest_framework import generics, filters, views, permissions
 from .filters import LocationFilterSet
 from .permissions import IsAdminOrReadOnly
 from .serializers import (
@@ -80,3 +83,31 @@ class LocationDetailAPIView(
     def perform_destroy(self, instance):
         instance.is_active = False
         instance.save(update_fields=["is_active"])
+
+
+class LocationExportCSVAPIView(views.APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        queryset = Location.objects.all().values(
+            "id",
+            "name",
+            "description",
+            "category_id",
+            "category__name",
+            "latitude",
+            "longitude",
+            "address",
+            "is_active",
+            "view_count",
+            "created_at",
+        )
+        df = pd.DataFrame.from_records(queryset)
+
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = "attachment; filename=locations.csv"
+
+        response.write("\ufeff")
+        df.to_csv(path_or_buf=response, index=False)
+
+        return response
