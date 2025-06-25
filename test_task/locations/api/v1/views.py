@@ -1,7 +1,13 @@
 import pandas as pd
+from django.conf import settings
+from django.core import cache
 
 from django.db.models import Avg, Count, F
+from django.db.models.fields import FloatField
+from django.db.models.functions import Coalesce
 from django.http import HttpResponse
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, filters, views, permissions
 from .filters import LocationFilterSet
@@ -19,7 +25,11 @@ class LocationQuerySetMixin:
 
     def get_queryset(self):
         queryset = Location.objects.all()
-        queryset = queryset.annotate(average_rating=Avg("reviews__rating"))
+        queryset = queryset.annotate(
+            average_rating=Coalesce(
+                Avg("reviews__rating"), 0, output_field=FloatField()
+            )
+        )
         queryset = queryset.annotate(review_count=Count("reviews"))
 
         rating_weight = 0.6
@@ -27,10 +37,14 @@ class LocationQuerySetMixin:
         views_weight = 0.1
 
         queryset = queryset.annotate(
-            popularity_score=(
-                F("average_rating") * rating_weight
-                + F("review_count") * reviews_weight
-                + F("view_count") * views_weight
+            popularity_score=Coalesce(
+                (
+                    F("average_rating") * rating_weight
+                    + F("review_count") * reviews_weight
+                    + F("view_count") * views_weight
+                ),
+                0,
+                output_field=FloatField(),
             )
         )
 
@@ -58,10 +72,18 @@ class LocationListCreateAPIView(LocationQuerySetMixin, generics.ListCreateAPIVie
         "popularity_score",
     )
 
+    @method_decorator(cache_page(settings.CACHE_TTL, key_prefix="location_list"))
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
     def get_serializer_class(self):
         if self.request.method == "POST":
             return LocationCreateSerializer
         return LocationListSerializer
+
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        cache.delete_pattern("*location_list*")
 
 
 class LocationDetailAPIView(
@@ -83,6 +105,11 @@ class LocationDetailAPIView(
     def perform_destroy(self, instance):
         instance.is_active = False
         instance.save(update_fields=["is_active"])
+        cache.delete_pattern("*location_list*")
+
+    def perform_update(self, serializer):
+        super().perform_update(serializer)
+        cache.delete_pattern("*location_list*")
 
 
 class LocationExportCSVAPIView(views.APIView):
