@@ -81,6 +81,13 @@ class Location(UUIDModel, TimestampedModel):
     class Meta:
         unique_together = ("latitude", "longitude")
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=("is_active",)),
+            models.Index(fields=("view_count",)),
+            models.Index(fields=("created_at",)),
+            models.Index(fields=["name"]),
+            models.Index(fields=["description"]),
+        ]
 
     def __str__(self):
         return self.name
