@@ -85,6 +85,10 @@ class ReviewVote(UUIDModel, TimestampedModel):
 
     class Meta:
         unique_together = ("review", "user")
+        indexes = [
+            models.Index(fields=("user", "review_id")),
+            models.Index(fields=("vote",)),
+        ]
 
     def __str__(self):
         vote_display = self.get_vote_display()
