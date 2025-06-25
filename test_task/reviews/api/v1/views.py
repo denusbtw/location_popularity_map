@@ -85,6 +85,8 @@ class ReviewVoteCreateAPIView(generics.CreateAPIView):
             user=self.request.user,
             review_id=self.kwargs["review_id"],
         )
+        cache.delete_pattern("*location_list*")
+        cache.delete_pattern("*review_list*")
 
 
 class ReviewVoteDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -96,3 +98,8 @@ class ReviewVoteDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             user=self.request.user,
             review_id=self.kwargs["review_id"],
         )
+
+    def perform_update(self, serializer):
+        super().perform_update(serializer)
+        cache.delete_pattern("*location_list*")
+        cache.delete_pattern("*review_list*")

@@ -24,7 +24,8 @@ from test_task.locations.models import Location
 class LocationQuerySetMixin:
 
     def get_queryset(self):
-        queryset = Location.objects.all()
+        queryset = Location.objects.select_related("category")
+        queryset = queryset.prefetch_related("reviews")
         queryset = queryset.annotate_average_rating()
         queryset = queryset.annotate_review_count()
         queryset = queryset.annotate_popularity_score()
