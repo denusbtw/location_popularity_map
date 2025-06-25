@@ -19,6 +19,7 @@ dependencies = [
     "pandas>=2.3.0",
     "psycopg2>=2.9.10",
     "pytest>=8.4.1",
+    "pytest-cov>=6.2.1",
     "pytest-django>=4.11.1",
     "redis>=6.2.0",
     "requests>=2.32.4",
