@@ -62,6 +62,13 @@ class Review(UUIDModel, TimestampedModel):
     class Meta:
         unique_together = ("location", "user")
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=("location",)),
+            models.Index(fields=("title",)),
+            models.Index(fields=("body",)),
+            models.Index(fields=("rating",)),
+            models.Index(fields=("created_at",)),
+        ]
 
     def __str__(self):
         return f"{self.user.username} - {self.location.name} ({self.rating}/{self.MAX_RATING})"
