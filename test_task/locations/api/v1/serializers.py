@@ -61,7 +61,15 @@ class LocationRetrieveSerializer(serializers.ModelSerializer):
 class LocationCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Location
-        fields = ("name", "description", "category", "latitude", "longitude", "address")
+        fields = (
+            "id",
+            "name",
+            "description",
+            "category",
+            "latitude",
+            "longitude",
+            "address",
+        )
 
 
 class LocationUpdateSerializer(serializers.ModelSerializer):
