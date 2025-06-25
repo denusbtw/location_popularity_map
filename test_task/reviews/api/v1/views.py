@@ -44,6 +44,10 @@ class ReviewQuerySetMixin:
 class ReviewListCreateAPIView(ReviewQuerySetMixin, generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
+    @method_decorator(cache_page(settings.CACHE_TTL, key_prefix="review_list"))
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
     def get_serializer_class(self):
         if self.request.method == "POST":
             return ReviewCreateSerializer
@@ -54,6 +58,8 @@ class ReviewListCreateAPIView(ReviewQuerySetMixin, generics.ListCreateAPIView):
             user=self.request.user,
             location_id=self.kwargs["location_id"],
         )
+        cache.delete_pattern("*location_list*")
+        cache.delete_pattern("*review_list*")
 
 
 class ReviewDetailAPIView(ReviewQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
@@ -70,6 +76,16 @@ class ReviewDetailAPIView(ReviewQuerySetMixin, generics.RetrieveUpdateDestroyAPI
             return [IsUser()]
         else:
             return [permissions.IsAdminUser()]
+
+    def perform_update(self, serializer):
+        super().perform_update(serializer)
+        cache.delete_pattern("*location_list*")
+        cache.delete_pattern("*review_list*")
+
+    def perform_destroy(self, instance):
+        super().perform_destroy(instance)
+        cache.delete_pattern("*location_list*")
+        cache.delete_pattern("*review_list*")
 
 
 class ReviewVoteCreateAPIView(generics.CreateAPIView):
