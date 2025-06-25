@@ -19,7 +19,6 @@ class LocationFilterSet(filters.FilterSet):
         fields = (
             "category",
             "category_name",
-            "is_active",
             "average_rating_min",
             "average_rating_max",
         )

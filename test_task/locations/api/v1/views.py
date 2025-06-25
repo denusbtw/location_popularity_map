@@ -1,7 +1,6 @@
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, F
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, permissions, filters
-
+from rest_framework import generics, filters
 from .filters import LocationFilterSet
 from .permissions import IsAdminOrReadOnly
 from .serializers import (
@@ -16,9 +15,20 @@ from test_task.locations.models import Location
 class LocationQuerySetMixin:
 
     def get_queryset(self):
-        queryset = Location.objects.annotate(
-            average_rating=Avg("reviews__rating"),
-            review_count=Count("reviews"),
+        queryset = Location.objects.all()
+        queryset = queryset.annotate(average_rating=Avg("reviews__rating"))
+        queryset = queryset.annotate(review_count=Count("reviews"))
+
+        rating_weight = 0.6
+        reviews_weight = 0.3
+        views_weight = 0.1
+
+        queryset = queryset.annotate(
+            popularity_score=(
+                F("average_rating") * rating_weight
+                + F("review_count") * reviews_weight
+                + F("view_count") * views_weight
+            )
         )
 
         if self.request.user.is_staff:
@@ -42,6 +52,7 @@ class LocationListCreateAPIView(LocationQuerySetMixin, generics.ListCreateAPIVie
         "review_count",
         "created_at",
         "is_active",
+        "popularity_score",
     )
 
     def get_serializer_class(self):
