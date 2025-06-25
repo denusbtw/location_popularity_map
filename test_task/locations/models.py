@@ -4,6 +4,9 @@ from django.core.validators import (
     MaxValueValidator,
 )
 from django.db import models
+from django.db.models import Avg, Count, F
+from django.db.models.fields import FloatField
+from django.db.models.functions import Coalesce
 
 from test_task.core.models import UUIDModel, TimestampedModel
 
@@ -17,6 +20,36 @@ class Category(UUIDModel, TimestampedModel):
 
     def __str__(self):
         return self.name
+
+
+class LocationQuerySet(models.QuerySet):
+
+    def annotate_average_rating(self):
+        return self.annotate(
+            average_rating=Coalesce(
+                Avg("reviews__rating"), 0, output_field=FloatField()
+            )
+        )
+
+    def annotate_review_count(self):
+        return self.annotate(review_count=Count("reviews"))
+
+    def annotate_popularity_score(self):
+        rating_weight = 0.6
+        reviews_weight = 0.3
+        views_weight = 0.1
+
+        return self.annotate(
+            popularity_score=Coalesce(
+                (
+                    F("average_rating") * rating_weight
+                    + F("review_count") * reviews_weight
+                    + F("view_count") * views_weight
+                ),
+                0,
+                output_field=FloatField(),
+            )
+        )
 
 
 class Location(UUIDModel, TimestampedModel):
@@ -42,6 +75,8 @@ class Location(UUIDModel, TimestampedModel):
 
     is_active = models.BooleanField(default=True)
     view_count = models.PositiveBigIntegerField(default=0)
+
+    objects = LocationQuerySet.as_manager()
 
     class Meta:
         unique_together = ("latitude", "longitude")

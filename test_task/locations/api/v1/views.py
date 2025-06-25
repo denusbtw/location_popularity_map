@@ -25,28 +25,9 @@ class LocationQuerySetMixin:
 
     def get_queryset(self):
         queryset = Location.objects.all()
-        queryset = queryset.annotate(
-            average_rating=Coalesce(
-                Avg("reviews__rating"), 0, output_field=FloatField()
-            )
-        )
-        queryset = queryset.annotate(review_count=Count("reviews"))
-
-        rating_weight = 0.6
-        reviews_weight = 0.3
-        views_weight = 0.1
-
-        queryset = queryset.annotate(
-            popularity_score=Coalesce(
-                (
-                    F("average_rating") * rating_weight
-                    + F("review_count") * reviews_weight
-                    + F("view_count") * views_weight
-                ),
-                0,
-                output_field=FloatField(),
-            )
-        )
+        queryset = queryset.annotate_average_rating()
+        queryset = queryset.annotate_review_count()
+        queryset = queryset.annotate_popularity_score()
 
         if self.request.user.is_staff:
             return queryset
