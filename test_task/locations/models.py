@@ -6,7 +6,7 @@ from django.core.validators import (
 from django.db import models
 from django.db.models import Avg, Count, F
 from django.db.models.fields import FloatField
-from django.db.models.functions import Coalesce
+from django.db.models.functions import Coalesce, Round
 
 from test_task.core.models import UUIDModel, TimestampedModel
 
@@ -40,14 +40,17 @@ class LocationQuerySet(models.QuerySet):
         views_weight = 0.1
 
         return self.annotate(
-            popularity_score=Coalesce(
-                (
-                    F("average_rating") * rating_weight
-                    + F("review_count") * reviews_weight
-                    + F("view_count") * views_weight
+            popularity_score=Round(
+                Coalesce(
+                    (
+                        F("average_rating") * rating_weight
+                        + F("review_count") * reviews_weight
+                        + F("view_count") * views_weight
+                    ),
+                    0,
+                    output_field=FloatField(),
                 ),
-                0,
-                output_field=FloatField(),
+                precision=2,
             )
         )
 
