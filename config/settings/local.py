@@ -9,3 +9,5 @@ DATABASES = {
         env("DEV_DATABASE_URL"),
     ),
 }
+
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

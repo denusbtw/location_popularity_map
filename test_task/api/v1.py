@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 
 from test_task.locations.api.v1.views import (
     LocationListCreateAPIView,
