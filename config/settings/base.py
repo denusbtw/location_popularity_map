@@ -33,6 +33,7 @@ THIRD_PARTY_APPS = []
 LOCAL_APPS = [
     "test_task.core",
     "test_task.users",
+    "test_task.locations",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
