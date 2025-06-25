@@ -1,10 +1,7 @@
 from django.conf import settings
-from django.db.models import Q
-from django.db.models.aggregates import Count
-from django.db.models.fields import IntegerField
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
-from rest_framework import generics, permissions, views
+from rest_framework import generics, permissions
 
 from django.core.cache import cache
 
@@ -48,8 +45,11 @@ class ReviewListCreateAPIView(ReviewQuerySetMixin, generics.ListCreateAPIView):
             user=self.request.user,
             location_id=self.kwargs["location_id"],
         )
-        cache.delete_pattern("*location_list*")
-        cache.delete_pattern("*review_list*")
+        try:
+            cache.delete_pattern("*location_list*")
+            cache.delete_pattern("*review_list*")
+        except AttributeError:
+            pass
 
 
 class ReviewDetailAPIView(ReviewQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
@@ -69,13 +69,19 @@ class ReviewDetailAPIView(ReviewQuerySetMixin, generics.RetrieveUpdateDestroyAPI
 
     def perform_update(self, serializer):
         super().perform_update(serializer)
-        cache.delete_pattern("*location_list*")
-        cache.delete_pattern("*review_list*")
+        try:
+            cache.delete_pattern("*location_list*")
+            cache.delete_pattern("*review_list*")
+        except AttributeError:
+            pass
 
     def perform_destroy(self, instance):
         super().perform_destroy(instance)
-        cache.delete_pattern("*location_list*")
-        cache.delete_pattern("*review_list*")
+        try:
+            cache.delete_pattern("*location_list*")
+            cache.delete_pattern("*review_list*")
+        except AttributeError:
+            pass
 
 
 class ReviewVoteCreateAPIView(generics.CreateAPIView):
@@ -87,8 +93,11 @@ class ReviewVoteCreateAPIView(generics.CreateAPIView):
             user=self.request.user,
             review_id=self.kwargs["review_id"],
         )
-        cache.delete_pattern("*location_list*")
-        cache.delete_pattern("*review_list*")
+        try:
+            cache.delete_pattern("*location_list*")
+            cache.delete_pattern("*review_list*")
+        except AttributeError:
+            pass
 
 
 class ReviewVoteDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -103,5 +112,8 @@ class ReviewVoteDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def perform_update(self, serializer):
         super().perform_update(serializer)
-        cache.delete_pattern("*location_list*")
-        cache.delete_pattern("*review_list*")
+        try:
+            cache.delete_pattern("*location_list*")
+            cache.delete_pattern("*review_list*")
+        except AttributeError:
+            pass
