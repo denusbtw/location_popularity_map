@@ -24,6 +24,8 @@ class ReviewQuerySetMixin:
 
     def get_queryset(self):
         queryset = Review.objects.filter(location_id=self.kwargs["location_id"])
+        queryset = queryset.select_related("location", "user")
+        queryset = queryset.prefetch_related("votes")
         queryset = queryset.annotate_upvote_count()
         queryset = queryset.annotate_downvote_count()
         return queryset
