@@ -1,4 +1,8 @@
-from django.core.validators import MaxValueValidator, MaxLengthValidator
+from django.core.validators import (
+    MaxValueValidator,
+    MaxLengthValidator,
+    MinValueValidator,
+)
 from django.db import models
 from django.contrib.auth import get_user_model
 
@@ -9,6 +13,7 @@ User = get_user_model()
 
 
 class Review(UUIDModel, TimestampedModel):
+    MIN_RATING = 1
     MAX_RATING = 5
 
     location = models.ForeignKey(
@@ -24,7 +29,10 @@ class Review(UUIDModel, TimestampedModel):
     title = models.CharField(max_length=255)
     body = models.TextField(validators=[MaxLengthValidator(2000)])
     rating = models.PositiveSmallIntegerField(
-        validators=[MaxValueValidator(MAX_RATING)]
+        validators=[
+            MinValueValidator(MIN_RATING),
+            MaxValueValidator(MAX_RATING),
+        ]
     )
 
     class Meta:
