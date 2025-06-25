@@ -32,6 +32,7 @@ THIRD_PARTY_APPS = []
 
 LOCAL_APPS = [
     "test_task.core",
+    "test_task.users",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -69,6 +70,8 @@ TEMPLATES = [
         },
     },
 ]
+
+AUTH_USER_MODEL = "users.User"
 
 AUTH_PASSWORD_VALIDATORS = [
     {
