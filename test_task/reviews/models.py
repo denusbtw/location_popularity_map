@@ -5,11 +5,33 @@ from django.core.validators import (
 )
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.db.models import Count, Q, IntegerField
 
 from test_task.core.models import UUIDModel, TimestampedModel
 from test_task.locations.models import Location
 
 User = get_user_model()
+
+
+class ReviewQuerySet(models.QuerySet):
+
+    def annotate_upvote_count(self):
+        return self.annotate(
+            upvote_count=Count(
+                "votes",
+                Q(votes__vote=ReviewVote.Vote.UPVOTE),
+                output_field=IntegerField(),
+            )
+        )
+
+    def annotate_downvote_count(self):
+        return self.annotate(
+            upvote_count=Count(
+                "votes",
+                Q(votes__vote=ReviewVote.Vote.DOWNVOTE),
+                output_field=IntegerField(),
+            )
+        )
 
 
 class Review(UUIDModel, TimestampedModel):
@@ -34,6 +56,8 @@ class Review(UUIDModel, TimestampedModel):
             MaxValueValidator(MAX_RATING),
         ]
     )
+
+    objects = ReviewQuerySet.as_manager()
 
     class Meta:
         unique_together = ("location", "user")

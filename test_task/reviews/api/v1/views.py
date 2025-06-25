@@ -38,6 +38,8 @@ class ReviewQuerySetMixin:
                 output_field=IntegerField(),
             ),
         )
+        queryset = queryset.annotate_upvote_count()
+        queryset = queryset.annotate_downvote_count()
         return queryset
 
 
