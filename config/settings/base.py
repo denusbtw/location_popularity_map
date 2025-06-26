@@ -1,5 +1,6 @@
 from pathlib import Path
 import environ
+from botocore.config import Config as BotoConfig
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 APPS_DIR = BASE_DIR / "test_task"
@@ -37,6 +38,7 @@ THIRD_PARTY_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "adrf",
+    "storages",
 ]
 
 LOCAL_APPS = [
@@ -148,3 +150,10 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
 
 
 OPENWEATHERMAP_API_KEY = env("OPENWEATHERMAP_API_KEY")
+
+
+AWS_ACCOUNT_ID = env("AWS_ACCOUNT_ID")
+AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY")
+AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME")
+AWS_S3_ENDPOINT_URL = f"https://{AWS_ACCOUNT_ID}.r2.cloudflarestorage.com"

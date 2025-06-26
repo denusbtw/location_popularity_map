@@ -1,10 +1,15 @@
 import asyncio
 import json
+from datetime import timedelta
+from io import BytesIO
+
+from django.utils import timezone
 
 import redis.asyncio as redis
 
 import pandas as pd
 from asgiref.sync import sync_to_async
+from botocore.exceptions import ClientError
 from django.conf import settings
 from django.core.cache import cache
 from adrf import generics as async_generics
@@ -22,6 +27,8 @@ from .serializers import (
 )
 from test_task.locations.models import Location
 from ...services import fetch_weather
+
+from test_task.core.cloudflare_r2_client import s3_client
 
 
 class LocationQuerySetMixin:
@@ -70,23 +77,18 @@ class AsyncLocationListCreateAPIView(
 
         page = await sync_to_async(self.paginate_queryset)(queryset)
 
-        redis_client = redis.Redis()
-
         if page is not None:
             serialized_page = self.get_serializer(page, many=True).data
 
             enriched_page = await asyncio.gather(
-                *(
-                    self.enrich_with_weather(loc, redis_client)
-                    for loc in serialized_page
-                )
+                *(self.enrich_with_weather(loc) for loc in serialized_page)
             )
             return self.get_paginated_response(enriched_page)
 
         serialized_data = self.get_serializer(queryset, many=True).data
 
         enriched_data = await asyncio.gather(
-            *(self.enrich_with_weather(loc, redis_client) for loc in serialized_data)
+            *(self.enrich_with_weather(loc) for loc in serialized_data)
         )
         return response.Response(enriched_data)
 
@@ -107,20 +109,43 @@ class AsyncLocationListCreateAPIView(
         except AttributeError:
             pass
 
-    async def enrich_with_weather(self, loc, redis_client):
+    async def enrich_with_weather(self, loc):
         lat = float(loc["latitude"])
         lon = float(loc["longitude"])
-        cache_key = f"weather:{lat:.4f}:{lon:.4f}"
+        filename = f"weather_cache/{lat:.4f}_{lon:.4f}"
 
-        cached = await redis_client.get(cache_key)
-        if cached:
-            loc["weather"] = json.loads(cached)
-            return loc
+        result = await self.get_weather_data_from_s3(filename)
+        if result is not None:
+            weather_data, metadata = result
+            if metadata > timezone.now() - timedelta(minutes=1):
+                loc["weather"] = json.loads(weather_data)
+                return loc
 
         weather = await fetch_weather(lat, lon)
         loc["weather"] = weather
-        await redis_client.set(cache_key, json.dumps(weather), ex=(60 * 5))  # 5 хвилин
+        await self.put_weather_data_to_s3(filename, weather)
         return loc
+
+    async def get_weather_data_from_s3(self, filename):
+        try:
+            obj = await sync_to_async(s3_client.get_object)(
+                Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=filename
+            )
+            body = await sync_to_async(obj["Body"].read)()
+            metadata = obj["LastModified"]
+            return body, metadata
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchKey":
+                return None
+            raise
+
+    async def put_weather_data_to_s3(self, filename, weather_data):
+        await sync_to_async(s3_client.put_object)(
+            Bucket=settings.AWS_STORAGE_BUCKET_NAME,
+            Key=filename,
+            Body=json.dumps(weather_data),
+            ContentType="application/json",
+        )
 
 
 class LocationDetailAPIView(
