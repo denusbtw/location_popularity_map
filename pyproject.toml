@@ -4,6 +4,8 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.11"
 dependencies = [
+    "adrf>=0.1.9",
+    "aiohttp>=3.12.13",
     "black>=25.1.0",
     "coverage>=7.9.1",
     "dj-database-url>=3.0.0",

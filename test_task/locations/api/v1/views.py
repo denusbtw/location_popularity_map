@@ -1,13 +1,14 @@
+import asyncio
+
 import pandas as pd
-from django.conf import settings
+from asgiref.sync import sync_to_async
 from django.core.cache import cache
+from adrf import generics as async_generics
+from adrf import mixins as async_mixins
 
 from django.http import HttpResponse
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, filters, views, permissions
-from .filters import LocationFilterSet
+from rest_framework import generics, filters, views, permissions, response
+
 from .permissions import IsAdminOrReadOnly
 from .serializers import (
     LocationCreateSerializer,
@@ -16,6 +17,7 @@ from .serializers import (
     LocationRetrieveSerializer,
 )
 from test_task.locations.models import Location
+from ...services import fetch_weather
 
 
 class LocationQuerySetMixin:
@@ -32,14 +34,19 @@ class LocationQuerySetMixin:
         return queryset.filter(is_active=True)
 
 
-class LocationListCreateAPIView(LocationQuerySetMixin, generics.ListCreateAPIView):
+class AsyncLocationListCreateAPIView(
+    LocationQuerySetMixin,
+    async_mixins.ListModelMixin,
+    async_mixins.CreateModelMixin,
+    async_generics.GenericAPIView,
+):
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (
-        DjangoFilterBackend,
+        #     DjangoFilterBackend,
         filters.SearchFilter,
         filters.OrderingFilter,
     )
-    filterset_class = LocationFilterSet
+    # filterset_class = LocationFilterSet
     search_fields = ("name", "description")
     ordering_fields = (
         "name",
@@ -51,9 +58,31 @@ class LocationListCreateAPIView(LocationQuerySetMixin, generics.ListCreateAPIVie
         "popularity_score",
     )
 
-    @method_decorator(cache_page(settings.CACHE_TTL, key_prefix="location_list"))
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
+    async def get_queryset(self):
+        return await sync_to_async(list)(super().get_queryset())
+
+    async def get(self, request, *args, **kwargs):
+        queryset = await self.get_queryset()
+
+        page = await sync_to_async(self.paginate_queryset)(queryset)
+
+        if page is not None:
+            serialized_page = self.get_serializer(page, many=True).data
+
+            enriched_page = await asyncio.gather(
+                *(self.enrich_with_weather(loc) for loc in serialized_page)
+            )
+            return self.get_paginated_response(enriched_page)
+
+        serialized_data = self.get_serializer(queryset, many=True).data
+
+        enriched_data = await asyncio.gather(
+            *(self.enrich_with_weather(loc) for loc in serialized_data)
+        )
+        return response.Response(enriched_data)
+
+    async def post(self, request, *args, **kwargs):
+        return await self.create(request, *args, **kwargs)
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -68,6 +97,12 @@ class LocationListCreateAPIView(LocationQuerySetMixin, generics.ListCreateAPIVie
             cache.delete_pattern("*location_list*")
         except AttributeError:
             pass
+
+    async def enrich_with_weather(self, loc):
+        lat = loc["latitude"]
+        lon = loc["longitude"]
+        loc["weather"] = await fetch_weather(lat, lon)
+        return loc
 
 
 class LocationDetailAPIView(

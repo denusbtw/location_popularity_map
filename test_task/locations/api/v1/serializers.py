@@ -1,3 +1,7 @@
+import asyncio
+
+import aiohttp
+from django.conf import settings
 from rest_framework import serializers
 
 from test_task.locations.models import Location, Category
@@ -14,6 +18,7 @@ class LocationListSerializer(serializers.ModelSerializer):
     average_rating = serializers.FloatField(default=0)
     review_count = serializers.IntegerField(default=0)
     popularity_score = serializers.FloatField(default=0)
+    weather = serializers.DictField(read_only=True)
 
     class Meta:
         model = Location
@@ -29,6 +34,7 @@ class LocationListSerializer(serializers.ModelSerializer):
             "average_rating",
             "review_count",
             "popularity_score",
+            "weather",
         )
         read_only_fields = fields
 
