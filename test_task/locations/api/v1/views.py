@@ -1,7 +1,11 @@
 import asyncio
+import json
+
+import redis.asyncio as redis
 
 import pandas as pd
 from asgiref.sync import sync_to_async
+from django.conf import settings
 from django.core.cache import cache
 from adrf import generics as async_generics
 from adrf import mixins as async_mixins
@@ -66,18 +70,23 @@ class AsyncLocationListCreateAPIView(
 
         page = await sync_to_async(self.paginate_queryset)(queryset)
 
+        redis_client = redis.Redis()
+
         if page is not None:
             serialized_page = self.get_serializer(page, many=True).data
 
             enriched_page = await asyncio.gather(
-                *(self.enrich_with_weather(loc) for loc in serialized_page)
+                *(
+                    self.enrich_with_weather(loc, redis_client)
+                    for loc in serialized_page
+                )
             )
             return self.get_paginated_response(enriched_page)
 
         serialized_data = self.get_serializer(queryset, many=True).data
 
         enriched_data = await asyncio.gather(
-            *(self.enrich_with_weather(loc) for loc in serialized_data)
+            *(self.enrich_with_weather(loc, redis_client) for loc in serialized_data)
         )
         return response.Response(enriched_data)
 
@@ -98,10 +107,19 @@ class AsyncLocationListCreateAPIView(
         except AttributeError:
             pass
 
-    async def enrich_with_weather(self, loc):
-        lat = loc["latitude"]
-        lon = loc["longitude"]
-        loc["weather"] = await fetch_weather(lat, lon)
+    async def enrich_with_weather(self, loc, redis_client):
+        lat = float(loc["latitude"])
+        lon = float(loc["longitude"])
+        cache_key = f"weather:{lat:.4f}:{lon:.4f}"
+
+        cached = await redis_client.get(cache_key)
+        if cached:
+            loc["weather"] = json.loads(cached)
+            return loc
+
+        weather = await fetch_weather(lat, lon)
+        loc["weather"] = weather
+        await redis_client.set(cache_key, json.dumps(weather), ex=(60 * 5))  # 5 хвилин
         return loc
 
 
