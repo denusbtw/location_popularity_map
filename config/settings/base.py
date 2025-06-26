@@ -137,7 +137,7 @@ CACHES = {
     }
 }
 
-CACHE_TTL = 60 * 15  # 15 хвилин
+CACHE_TTL = 60 * 5  # 5 хвилин
 
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
